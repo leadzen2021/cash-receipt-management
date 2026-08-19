@@ -9,9 +9,9 @@
   background: var(--color-background);
 }
 
-.loginBox {
+.signupBox {
   width: 100%;
-  max-width: 44rem;
+  max-width: 48rem;
   padding: 4.8rem;
 
   background: var(--color-surface);
@@ -83,7 +83,17 @@
   }
 }
 
-.loginButton {
+.errorMessage {
+  padding: 1.2rem 1.4rem;
+
+  color: #a44747;
+  font-size: 1.4rem;
+
+  background: var(--color-danger-bg);
+  border-radius: var(--radius-xs);
+}
+
+.signupButton {
   height: 5rem;
   margin-top: 0.8rem;
 
@@ -93,14 +103,19 @@
   background: var(--color-primary);
   border-radius: var(--radius-xs);
 
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, opacity 0.2s ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--color-primary-hover);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 }
 
-.signup {
+.login {
   display: flex;
   justify-content: center;
   gap: 0.8rem;
@@ -113,22 +128,5 @@
   a {
     color: var(--color-primary);
     font-weight: 600;
-  }
-}
-
-.errorMessage {
-  padding: 1.2rem 1.4rem;
-
-  color: #a44747;
-  font-size: 1.4rem;
-
-  background: var(--color-danger-bg);
-  border-radius: var(--radius-xs);
-}
-
-.loginButton {
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
   }
 }
