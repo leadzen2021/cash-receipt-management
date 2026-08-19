@@ -1,8 +1,20 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import Header from "@/components/layout/Header/Header";
 import styles from "./page.module.scss";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <>
       <Header />
