@@ -48,6 +48,8 @@ export default function ReceiptManager({ category, title, description }) {
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [selectedMonth, setSelectedMonth] = useState("");
 
+  const [searchTerm, setSearchTerm] = useState("");
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const [receipts, setReceipts] = useState([]);
@@ -119,7 +121,7 @@ export default function ReceiptManager({ category, title, description }) {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, selectedYear, selectedMonth, sortOrder]);
+  }, [activeTab, selectedYear, selectedMonth, sortOrder, searchTerm]);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -419,6 +421,8 @@ export default function ReceiptManager({ category, title, description }) {
     return pendingReasonLabels[reason] ?? reason ?? "-";
   };
 
+  const normalizedSearchTerm = searchTerm.trim().replace(/\s/g, "");
+
   const filteredPendingReceipts =
     activeTab === "pending"
       ? receipts.filter((receipt) => {
@@ -431,7 +435,13 @@ export default function ReceiptManager({ category, title, description }) {
           const monthMatches =
             selectedMonth === "" || Number(month) === Number(selectedMonth);
 
-          return yearMatches && monthMatches;
+          const studentName = (receipt.student_name ?? "").replace(/\s/g, "");
+
+          const searchMatches =
+            normalizedSearchTerm === "" ||
+            studentName.includes(normalizedSearchTerm);
+
+          return yearMatches && monthMatches && searchMatches;
         })
       : receipts;
 
@@ -449,7 +459,13 @@ export default function ReceiptManager({ category, title, description }) {
             selectedMonth === "" ||
             processedDate.getMonth() + 1 === Number(selectedMonth);
 
-          return yearMatches && monthMatches;
+          const studentName = (receipt.student_name ?? "").replace(/\s/g, "");
+
+          const searchMatches =
+            normalizedSearchTerm === "" ||
+            studentName.includes(normalizedSearchTerm);
+
+          return yearMatches && monthMatches && searchMatches;
         })
       : receipts;
 
@@ -555,7 +571,10 @@ export default function ReceiptManager({ category, title, description }) {
       selectedMonth ? `_${selectedMonth}월` : "_전체"
     }`;
 
-    const fileName = `${categoryName}_현금영수증_${tabName}${periodName}_${dateString}.xlsx`;
+    const searchName =
+      normalizedSearchTerm !== "" ? `_${normalizedSearchTerm}` : "";
+
+    const fileName = `${categoryName}_현금영수증_${tabName}${periodName}${searchName}_${dateString}.xlsx`;
 
     XLSX.writeFile(workbook, fileName);
   };
@@ -615,6 +634,55 @@ export default function ReceiptManager({ category, title, description }) {
         >
           다음
         </button>
+      </div>
+    );
+  };
+
+  const renderFilters = (yearId) => {
+    return (
+      <div className={styles.completedFilters}>
+        <div className={styles.searchBox}>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="학생 이름 검색"
+            aria-label="학생 이름 검색"
+          />
+        </div>
+
+        <div className={styles.filterGroup}>
+          <label htmlFor={yearId}>조회기간</label>
+
+          <select
+            id={yearId}
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+          >
+            <option value="2026">2026년</option>
+            <option value="2025">2025년</option>
+          </select>
+
+          <select
+            aria-label="조회 월"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+          >
+            <option value="">전체 월</option>
+            <option value="1">1월</option>
+            <option value="2">2월</option>
+            <option value="3">3월</option>
+            <option value="4">4월</option>
+            <option value="5">5월</option>
+            <option value="6">6월</option>
+            <option value="7">7월</option>
+            <option value="8">8월</option>
+            <option value="9">9월</option>
+            <option value="10">10월</option>
+            <option value="11">11월</option>
+            <option value="12">12월</option>
+          </select>
+        </div>
       </div>
     );
   };
@@ -681,40 +749,7 @@ export default function ReceiptManager({ category, title, description }) {
 
             {activeTab === "pending" ? (
               <section className={styles.tableSection} ref={tableAreaRef}>
-                <div className={styles.completedFilters}>
-                  <div className={styles.filterGroup}>
-                    <label htmlFor="pendingYear">조회기간</label>
-
-                    <select
-                      id="pendingYear"
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                    >
-                      <option value="2026">2026년</option>
-                      <option value="2025">2025년</option>
-                    </select>
-
-                    <select
-                      aria-label="조회 월"
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                    >
-                      <option value="">전체 월</option>
-                      <option value="1">1월</option>
-                      <option value="2">2월</option>
-                      <option value="3">3월</option>
-                      <option value="4">4월</option>
-                      <option value="5">5월</option>
-                      <option value="6">6월</option>
-                      <option value="7">7월</option>
-                      <option value="8">8월</option>
-                      <option value="9">9월</option>
-                      <option value="10">10월</option>
-                      <option value="11">11월</option>
-                      <option value="12">12월</option>
-                    </select>
-                  </div>
-                </div>
+                {renderFilters("pendingYear")}
 
                 <div className={styles.tableWrapper}>
                   <table className={styles.table}>
@@ -874,7 +909,6 @@ export default function ReceiptManager({ category, title, description }) {
                       ) : (
                         paginatedReceipts.map((receipt) => {
                           const isSelected = selectedReceiptId === receipt.id;
-
                           const isEditing = editingReceiptId === receipt.id;
 
                           if (isEditing) {
@@ -962,12 +996,15 @@ export default function ReceiptManager({ category, title, description }) {
                                       <option value="no_receipt_number">
                                         현금영수증처리번호 받지 않음
                                       </option>
+
                                       <option value="not_processed">
                                         미처리
                                       </option>
+
                                       <option value="academy_hold">
                                         학원 사정으로 보류
                                       </option>
+
                                       <option value="etc">기타</option>
                                     </select>
 
@@ -1106,40 +1143,7 @@ export default function ReceiptManager({ category, title, description }) {
               </section>
             ) : (
               <section className={styles.tableSection}>
-                <div className={styles.completedFilters}>
-                  <div className={styles.filterGroup}>
-                    <label htmlFor="completedYear">조회기간</label>
-
-                    <select
-                      id="completedYear"
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                    >
-                      <option value="2026">2026년</option>
-                      <option value="2025">2025년</option>
-                    </select>
-
-                    <select
-                      aria-label="조회 월"
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                    >
-                      <option value="">전체 월</option>
-                      <option value="1">1월</option>
-                      <option value="2">2월</option>
-                      <option value="3">3월</option>
-                      <option value="4">4월</option>
-                      <option value="5">5월</option>
-                      <option value="6">6월</option>
-                      <option value="7">7월</option>
-                      <option value="8">8월</option>
-                      <option value="9">9월</option>
-                      <option value="10">10월</option>
-                      <option value="11">11월</option>
-                      <option value="12">12월</option>
-                    </select>
-                  </div>
-                </div>
+                {renderFilters("completedYear")}
 
                 <div className={styles.tableWrapper}>
                   <table className={styles.table}>
