@@ -8,6 +8,8 @@ import { FiEdit3, FiTrash2 } from "react-icons/fi";
 import ProcessReceiptModal from "@/components/receipt/ProcessReceiptModal/ProcessReceiptModal";
 import * as XLSX from "xlsx";
 
+const ITEMS_PER_PAGE = 20;
+
 const initialReceipt = {
   depositDate: "",
   seatNumber: "",
@@ -45,6 +47,8 @@ export default function ReceiptManager({ category, title, description }) {
 
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [selectedMonth, setSelectedMonth] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [receipts, setReceipts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,6 +116,10 @@ export default function ReceiptManager({ category, title, description }) {
 
     setActiveTab(nextTab);
   }, [searchParams]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, selectedYear, selectedMonth, sortOrder]);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -411,7 +419,6 @@ export default function ReceiptManager({ category, title, description }) {
     return pendingReasonLabels[reason] ?? reason ?? "-";
   };
 
-  // 처리 예정: 입금일 기준 연도 / 월 필터
   const filteredPendingReceipts =
     activeTab === "pending"
       ? receipts.filter((receipt) => {
@@ -428,7 +435,6 @@ export default function ReceiptManager({ category, title, description }) {
         })
       : receipts;
 
-  // 처리 완료: 처리일자 기준 연도 / 월 필터
   const filteredCompletedReceipts =
     activeTab === "completed"
       ? receipts.filter((receipt) => {
@@ -447,6 +453,18 @@ export default function ReceiptManager({ category, title, description }) {
         })
       : receipts;
 
+  const currentReceipts =
+    activeTab === "pending"
+      ? filteredPendingReceipts
+      : filteredCompletedReceipts;
+
+  const totalPages = Math.ceil(currentReceipts.length / ITEMS_PER_PAGE);
+
+  const paginatedReceipts = currentReceipts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const handleExcelDownload = () => {
     const downloadReceipts =
       activeTab === "pending"
@@ -464,7 +482,7 @@ export default function ReceiptManager({ category, title, description }) {
       excelData = downloadReceipts.map((receipt) => ({
         입금일: receipt.deposit_date,
         좌석번호: receipt.seat_number ?? "",
-        입금자명: receipt.student_name,
+        "입금자명(학생이름)": receipt.student_name,
         "금액(₩)": Number(receipt.amount),
         사유: receipt.payment_reason ?? "",
         현금영수증처리번호: receipt.receipt_number ?? "",
@@ -475,7 +493,7 @@ export default function ReceiptManager({ category, title, description }) {
       excelData = downloadReceipts.map((receipt) => ({
         입금일: receipt.deposit_date,
         좌석번호: receipt.seat_number ?? "",
-        입금자명: receipt.student_name,
+        "입금자명(학생이름)": receipt.student_name,
         "금액(₩)": Number(receipt.amount),
         사유: receipt.payment_reason ?? "",
         현금영수증처리번호: receipt.receipt_number ?? "",
@@ -493,7 +511,7 @@ export default function ReceiptManager({ category, title, description }) {
         ? [
             { wch: 14 },
             { wch: 12 },
-            { wch: 14 },
+            { wch: 20 },
             { wch: 16 },
             { wch: 22 },
             { wch: 24 },
@@ -503,7 +521,7 @@ export default function ReceiptManager({ category, title, description }) {
         : [
             { wch: 14 },
             { wch: 12 },
-            { wch: 14 },
+            { wch: 20 },
             { wch: 16 },
             { wch: 22 },
             { wch: 24 },
@@ -558,6 +576,47 @@ export default function ReceiptManager({ category, title, description }) {
     setProcessingReceipt(null);
 
     router.replace(`${pathname}?tab=completed`);
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className={styles.pagination}>
+        <button
+          type="button"
+          onClick={() => setCurrentPage((prev) => prev - 1)}
+          disabled={currentPage === 1}
+        >
+          이전
+        </button>
+
+        <div className={styles.pageNumbers}>
+          {Array.from({ length: totalPages }, (_, index) => {
+            const page = index + 1;
+
+            return (
+              <button
+                key={page}
+                type="button"
+                className={currentPage === page ? styles.activePage : ""}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setCurrentPage((prev) => prev + 1)}
+          disabled={currentPage === totalPages}
+        >
+          다음
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -756,13 +815,10 @@ export default function ReceiptManager({ category, title, description }) {
                                 <option value="no_receipt_number">
                                   현금영수증처리번호 받지 않음
                                 </option>
-
                                 <option value="not_processed">미처리</option>
-
                                 <option value="academy_hold">
                                   학원 사정으로 보류
                                 </option>
-
                                 <option value="etc">기타</option>
                               </select>
 
@@ -816,7 +872,7 @@ export default function ReceiptManager({ category, title, description }) {
                           </td>
                         </tr>
                       ) : (
-                        filteredPendingReceipts.map((receipt) => {
+                        paginatedReceipts.map((receipt) => {
                           const isSelected = selectedReceiptId === receipt.id;
 
                           const isEditing = editingReceiptId === receipt.id;
@@ -906,15 +962,12 @@ export default function ReceiptManager({ category, title, description }) {
                                       <option value="no_receipt_number">
                                         현금영수증처리번호 받지 않음
                                       </option>
-
                                       <option value="not_processed">
                                         미처리
                                       </option>
-
                                       <option value="academy_hold">
                                         학원 사정으로 보류
                                       </option>
-
                                       <option value="etc">기타</option>
                                     </select>
 
@@ -1039,6 +1092,8 @@ export default function ReceiptManager({ category, title, description }) {
                   </table>
                 </div>
 
+                {renderPagination()}
+
                 <div className={styles.tableFooter}>
                   <button
                     className={styles.excelButton}
@@ -1117,7 +1172,7 @@ export default function ReceiptManager({ category, title, description }) {
                           </td>
                         </tr>
                       ) : (
-                        filteredCompletedReceipts.map((receipt) => (
+                        paginatedReceipts.map((receipt) => (
                           <tr
                             key={receipt.id}
                             className={styles.dataRow}
@@ -1155,6 +1210,8 @@ export default function ReceiptManager({ category, title, description }) {
                     </tbody>
                   </table>
                 </div>
+
+                {renderPagination()}
 
                 <div className={styles.tableFooter}>
                   <button
