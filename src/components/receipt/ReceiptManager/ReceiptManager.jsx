@@ -663,7 +663,7 @@ export default function ReceiptManager({ category, title, description }) {
                       <tr>
                         <th>입금일</th>
                         <th>좌석번호</th>
-                        <th>입금자명</th>
+                        <th>입금자명(학생이름)</th>
                         <th>금액(₩)</th>
                         <th>사유</th>
                         <th>현금영수증처리번호</th>
@@ -1092,7 +1092,7 @@ export default function ReceiptManager({ category, title, description }) {
                       <tr>
                         <th>입금일</th>
                         <th>좌석번호</th>
-                        <th>입금자명</th>
+                        <th>입금자명(학생이름)</th>
                         <th>금액(₩)</th>
                         <th>사유</th>
                         <th>현금영수증처리번호</th>

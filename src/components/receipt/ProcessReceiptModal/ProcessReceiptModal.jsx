@@ -116,7 +116,7 @@ export default function ProcessReceiptModal({ receipt, onClose, onSuccess }) {
 
         <div className={styles.receiptSummary}>
           <div>
-            <span className={styles.summaryLabel}>입금자명</span>
+            <span className={styles.summaryLabel}>입금자명(학생이름)</span>
             <strong>{receipt.student_name}</strong>
           </div>
 
